@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Play } from "lucide-react";
 import heroImage from "@/assets/hero-fitness.jpg";
+import { Link } from "react-router-dom";
 
 export function HeroSection() {
   return (
@@ -43,13 +44,17 @@ export function HeroSection() {
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in" style={{ animationDelay: "400ms" }}>
-            <Button variant="hero" size="xl">
-              Começar Agora
-              <ArrowRight className="w-5 h-5" />
+            <Button variant="hero" size="xl" asChild>
+              <Link to="/auth">
+                Começar Agora
+                <ArrowRight className="w-5 h-5" />
+              </Link>
             </Button>
-            <Button variant="glass" size="xl">
-              <Play className="w-5 h-5" />
-              Ver Demo
+            <Button variant="glass" size="xl" asChild>
+              <Link to="/analysis">
+                <Play className="w-5 h-5" />
+                Ver Demo
+              </Link>
             </Button>
           </div>
 

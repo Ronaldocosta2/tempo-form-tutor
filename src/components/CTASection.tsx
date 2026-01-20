@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Sparkles } from "lucide-react";
 import dashboardImage from "@/assets/dashboard-preview.jpg";
+import { Link } from "react-router-dom";
 
 export function CTASection() {
   return (
@@ -30,12 +31,16 @@ export function CTASection() {
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4">
-                <Button variant="accent" size="lg">
-                  Criar Minha Conta
-                  <ArrowRight className="w-5 h-5" />
+                <Button variant="accent" size="lg" asChild>
+                  <Link to="/auth">
+                    Criar Minha Conta
+                    <ArrowRight className="w-5 h-5" />
+                  </Link>
                 </Button>
-                <Button variant="glass" size="lg">
-                  Saiba Mais
+                <Button variant="glass" size="lg" asChild>
+                  <Link to="/dashboard">
+                    Saiba Mais
+                  </Link>
                 </Button>
               </div>
             </div>

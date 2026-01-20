@@ -14,7 +14,69 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          arm_cm: number | null
+          avatar_url: string | null
+          birth_date: string | null
+          body_fat_percent: number | null
+          chest_cm: number | null
+          created_at: string
+          experience_level: string | null
+          full_name: string | null
+          height_cm: number | null
+          hip_cm: number | null
+          id: string
+          objective: string | null
+          sex: string | null
+          thigh_cm: number | null
+          updated_at: string
+          user_id: string
+          waist_cm: number | null
+          weight_kg: number | null
+        }
+        Insert: {
+          arm_cm?: number | null
+          avatar_url?: string | null
+          birth_date?: string | null
+          body_fat_percent?: number | null
+          chest_cm?: number | null
+          created_at?: string
+          experience_level?: string | null
+          full_name?: string | null
+          height_cm?: number | null
+          hip_cm?: number | null
+          id?: string
+          objective?: string | null
+          sex?: string | null
+          thigh_cm?: number | null
+          updated_at?: string
+          user_id: string
+          waist_cm?: number | null
+          weight_kg?: number | null
+        }
+        Update: {
+          arm_cm?: number | null
+          avatar_url?: string | null
+          birth_date?: string | null
+          body_fat_percent?: number | null
+          chest_cm?: number | null
+          created_at?: string
+          experience_level?: string | null
+          full_name?: string | null
+          height_cm?: number | null
+          hip_cm?: number | null
+          id?: string
+          objective?: string | null
+          sex?: string | null
+          thigh_cm?: number | null
+          updated_at?: string
+          user_id?: string
+          waist_cm?: number | null
+          weight_kg?: number | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

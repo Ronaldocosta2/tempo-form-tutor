@@ -1,7 +1,8 @@
-import { Activity, LayoutDashboard, Menu, User, Video, X } from "lucide-react";
+import { Activity, LayoutDashboard, LogOut, Menu, User, Video, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 const navItems = [
   { label: "Início", href: "/" },
@@ -13,6 +14,17 @@ const navItems = [
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
+
+  const handleAuthClick = () => {
+    if (user) {
+      signOut();
+      navigate("/");
+    } else {
+      navigate("/auth");
+    }
+  };
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50">
@@ -44,10 +56,17 @@ export function Header() {
           </div>
 
           {/* CTA Button */}
-          <div className="hidden md:block">
-            <Button variant="hero" size="default">
-              Começar Grátis
-            </Button>
+          <div className="hidden md:flex items-center gap-3">
+            {user ? (
+              <Button variant="glass" size="default" onClick={handleAuthClick}>
+                <LogOut className="w-4 h-4" />
+                Sair
+              </Button>
+            ) : (
+              <Button variant="hero" size="default" onClick={handleAuthClick}>
+                Começar Grátis
+              </Button>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -76,9 +95,16 @@ export function Header() {
                   {item.label}
                 </Link>
               ))}
-              <Button variant="hero" className="mt-2 w-full">
-                Começar Grátis
-              </Button>
+              {user ? (
+                <Button variant="glass" className="mt-2 w-full" onClick={handleAuthClick}>
+                  <LogOut className="w-4 h-4" />
+                  Sair
+                </Button>
+              ) : (
+                <Button variant="hero" className="mt-2 w-full" onClick={handleAuthClick}>
+                  Começar Grátis
+                </Button>
+              )}
             </div>
           </div>
         )}
