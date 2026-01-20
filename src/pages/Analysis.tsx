@@ -13,7 +13,10 @@ import {
   Download,
   ChevronRight
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 import heroImage from "@/assets/hero-fitness.jpg";
 
 const exerciseTypes = [
@@ -49,32 +52,128 @@ const mockAnalysisResult = {
 };
 
 const Analysis = () => {
+  const { user } = useAuth();
   const [analysisState, setAnalysisState] = useState<"idle" | "uploading" | "analyzing" | "complete">("idle");
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadedVideoUrl, setUploadedVideoUrl] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const simulateAnalysis = () => {
+  const handleFileUpload = async (file: File) => {
+    if (!user) {
+      toast.error("Você precisa estar logado para fazer upload");
+      return;
+    }
+
+    // Validate file type
+    const allowedTypes = ['video/mp4', 'video/quicktime', 'video/mov'];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("Formato de arquivo não suportado. Use MP4 ou MOV.");
+      return;
+    }
+
+    // Validate file size (100MB max)
+    const maxSize = 100 * 1024 * 1024;
+    if (file.size > maxSize) {
+      toast.error("Arquivo muito grande. Máximo 100MB.");
+      return;
+    }
+
     setAnalysisState("uploading");
-    
-    // Simulate upload
-    let progress = 0;
-    const uploadInterval = setInterval(() => {
-      progress += 10;
-      setUploadProgress(progress);
-      if (progress >= 100) {
-        clearInterval(uploadInterval);
-        setAnalysisState("analyzing");
-        
-        // Simulate analysis
-        setTimeout(() => {
-          setAnalysisState("complete");
-        }, 2500);
+    setUploadProgress(0);
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+
+      // Upload with progress tracking
+      const { error: uploadError, data } = await supabase.storage
+        .from('exercise-videos')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false,
+        });
+
+      // Simulate progress since Supabase JS doesn't have native progress
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => {
+          if (prev >= 90) {
+            clearInterval(progressInterval);
+            return prev;
+          }
+          return prev + 10;
+        });
+      }, 200);
+
+      if (uploadError) {
+        clearInterval(progressInterval);
+        throw uploadError;
       }
-    }, 200);
+
+      clearInterval(progressInterval);
+      setUploadProgress(100);
+
+      // Get signed URL for the video
+      const { data: urlData } = await supabase.storage
+        .from('exercise-videos')
+        .createSignedUrl(fileName, 3600);
+
+      if (urlData?.signedUrl) {
+        setUploadedVideoUrl(urlData.signedUrl);
+      }
+
+      toast.success("Vídeo enviado com sucesso!");
+      
+      // Start analysis
+      setAnalysisState("analyzing");
+      
+      // Simulate AI analysis (replace with real AI call when available)
+      setTimeout(() => {
+        setAnalysisState("complete");
+      }, 2500);
+
+    } catch (error: any) {
+      console.error("Upload error:", error);
+      toast.error(error.message || "Erro ao fazer upload do vídeo");
+      setAnalysisState("idle");
+      setUploadProgress(0);
+    }
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      handleFileUpload(file);
+    }
+  };
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      handleFileUpload(file);
+    }
+  }, [user]);
+
+  const openFileDialog = () => {
+    fileInputRef.current?.click();
   };
 
   const resetAnalysis = () => {
     setAnalysisState("idle");
     setUploadProgress(0);
+    setUploadedVideoUrl(null);
   };
 
   return (
@@ -95,11 +194,27 @@ const Analysis = () => {
 
           {analysisState === "idle" && (
             <div className="grid md:grid-cols-2 gap-8">
+              {/* Hidden file input */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="video/mp4,video/quicktime,video/mov"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+              
               {/* Upload Area */}
               <div className="glass-card p-8">
                 <div 
-                  className="border-2 border-dashed border-border rounded-xl p-12 text-center hover:border-primary/50 transition-colors cursor-pointer group"
-                  onClick={simulateAnalysis}
+                  className={`border-2 border-dashed rounded-xl p-12 text-center transition-colors cursor-pointer group ${
+                    isDragging 
+                      ? "border-primary bg-primary/5" 
+                      : "border-border hover:border-primary/50"
+                  }`}
+                  onClick={openFileDialog}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
                 >
                   <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
                     <Upload className="w-10 h-10 text-primary" />
@@ -108,7 +223,7 @@ const Analysis = () => {
                   <p className="text-muted-foreground mb-6">
                     Arraste e solte seu vídeo aqui ou clique para selecionar
                   </p>
-                  <Button variant="hero">
+                  <Button variant="hero" type="button">
                     Selecionar Arquivo
                   </Button>
                   <p className="text-sm text-muted-foreground mt-4">
@@ -173,15 +288,25 @@ const Analysis = () => {
               <div className="grid lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 glass-card p-6">
                   <div className="relative rounded-xl overflow-hidden mb-4">
-                    <img 
-                      src={heroImage} 
-                      alt="Exercise Analysis"
-                      className="w-full h-80 object-cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
-                    <button className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full bg-primary/80 flex items-center justify-center hover:bg-primary transition-colors">
-                      <Play className="w-8 h-8 text-primary-foreground ml-1" />
-                    </button>
+                    {uploadedVideoUrl ? (
+                      <video 
+                        src={uploadedVideoUrl} 
+                        controls
+                        className="w-full h-80 object-cover bg-black"
+                      />
+                    ) : (
+                      <>
+                        <img 
+                          src={heroImage} 
+                          alt="Exercise Analysis"
+                          className="w-full h-80 object-cover"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
+                        <button className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full bg-primary/80 flex items-center justify-center hover:bg-primary transition-colors">
+                          <Play className="w-8 h-8 text-primary-foreground ml-1" />
+                        </button>
+                      </>
+                    )}
                     <div className="absolute bottom-4 left-4 right-4 flex justify-between items-center">
                       <span className="text-sm font-medium bg-card/80 px-3 py-1 rounded-full">
                         {mockAnalysisResult.exercise}
