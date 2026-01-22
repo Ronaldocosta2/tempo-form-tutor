@@ -1,76 +1,81 @@
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight, Sparkles, Rocket } from "lucide-react";
 import dashboardImage from "@/assets/dashboard-preview.jpg";
 import { Link } from "react-router-dom";
 
 export function CTASection() {
   return (
-    <section className="py-24 px-6 relative overflow-hidden">
+    <section className="py-24 px-6 relative overflow-hidden bg-background">
       {/* Background effects */}
-      <div className="absolute inset-0 bg-gradient-to-b from-background via-card/50 to-background pointer-events-none" />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/10 rounded-full blur-[100px]" />
-      
+      <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-5" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/10 rounded-full blur-[120px]" />
+
       <div className="container mx-auto relative z-10">
-        <div className="glass-card p-8 md:p-12 lg:p-16 relative overflow-hidden">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
+        <div className="glass-card p-8 md:p-12 lg:p-16 relative overflow-hidden border-primary/20">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
             {/* Content */}
-            <div>
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 border border-accent/20 mb-6">
-                <Sparkles className="w-4 h-4 text-accent" />
-                <span className="text-sm font-medium text-accent">Acompanhe sua Evolução</span>
+            <div className="relative z-10">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 border border-accent/20 mb-8 backdrop-blur-md">
+                <Sparkles className="w-4 h-4 text-accent animate-pulse" />
+                <span className="text-sm font-medium text-accent uppercase tracking-wider">Acesso Antecipado</span>
               </div>
-              
-              <h2 className="font-display text-4xl md:text-5xl font-bold mb-6">
-                Dashboard Completo para{" "}
-                <span className="gradient-text-accent">Resultados Reais</span>
+
+              <h2 className="font-display text-5xl md:text-6xl font-bold mb-8 leading-tight">
+                Comece Sua <br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-white to-accent">
+                  Transformação
+                </span>
               </h2>
-              
-              <p className="text-lg text-muted-foreground mb-8">
-                Visualize seu progresso, acompanhe medidas corporais, veja predições inteligentes 
-                e receba recomendações personalizadas para atingir seus objetivos mais rápido.
+
+              <p className="text-xl text-muted-foreground mb-10 leading-relaxed">
+                Não treine sozinho. Tenha a inteligência de uma equipe olímpica no seu bolso.
+                Junte-se a milhares de atletas que já estão no futuro.
               </p>
 
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Button variant="accent" size="lg" asChild>
+              <div className="flex flex-col sm:flex-row gap-6">
+                <Button variant="accent" size="xl" className="group relative overflow-hidden" asChild>
                   <Link to="/auth">
-                    Criar Minha Conta
-                    <ArrowRight className="w-5 h-5" />
+                    <span className="relative z-10 flex items-center gap-2">
+                      Iniciar Agora
+                      <Rocket className="w-5 h-5 group-hover:-translate-y-1 group-hover:translate-x-1 transition-transform" />
+                    </span>
+                    <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
                   </Link>
                 </Button>
-                <Button variant="glass" size="lg" asChild>
+                <Button variant="glass" size="xl" className="border-white/10 hover:bg-white/5" asChild>
                   <Link to="/dashboard">
-                    Saiba Mais
+                    Ver Planos
                   </Link>
                 </Button>
               </div>
             </div>
 
             {/* Dashboard Preview */}
-            <div className="relative">
-              <div className="rounded-2xl overflow-hidden border border-border/50 shadow-2xl">
+            <div className="relative perspective-1000">
+              <div className="rounded-2xl overflow-hidden border border-white/10 shadow-2xl transform rotate-y-12 hover:rotate-y-0 transition-transform duration-700">
+                <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 to-transparent mix-blend-overlay z-10" />
                 <img
                   src={dashboardImage}
                   alt="Dashboard Preview"
                   className="w-full h-auto"
                 />
               </div>
-              
+
               {/* Floating cards */}
-              <div className="absolute -top-4 -right-4 glass-card p-4 animate-float">
-                <div className="text-2xl font-bold text-success">+12%</div>
-                <div className="text-sm text-muted-foreground">Ganho Muscular</div>
+              <div className="absolute -top-10 -right-10 glass-card p-6 animate-float border-primary/30 bg-black/50 backdrop-blur-xl">
+                <div className="text-3xl font-bold text-success font-display">+15%</div>
+                <div className="text-sm text-muted-foreground uppercase tracking-wider">Força</div>
               </div>
-              
-              <div className="absolute -bottom-4 -left-4 glass-card p-4 animate-float" style={{ animationDelay: "1s" }}>
-                <div className="text-2xl font-bold text-primary">94%</div>
-                <div className="text-sm text-muted-foreground">Precisão Média</div>
+
+              <div className="absolute -bottom-10 -left-10 glass-card p-6 animate-float border-accent/30 bg-black/50 backdrop-blur-xl" style={{ animationDelay: "1.5s" }}>
+                <div className="text-3xl font-bold text-primary font-display">100%</div>
+                <div className="text-sm text-muted-foreground uppercase tracking-wider">Foco</div>
               </div>
             </div>
           </div>
 
           {/* Background glow */}
-          <div className="absolute top-0 right-0 w-96 h-96 bg-accent/10 rounded-full blur-[100px] pointer-events-none" />
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-primary/10 rounded-full blur-[80px] pointer-events-none" />
+          <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-bl from-primary/5 via-transparent to-accent/5 pointer-events-none" />
         </div>
       </div>
     </section>

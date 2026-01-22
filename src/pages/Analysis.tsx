@@ -2,11 +2,11 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { 
-  Upload, 
-  Video, 
-  CheckCircle, 
-  XCircle, 
+import {
+  Upload,
+  Video,
+  CheckCircle,
+  XCircle,
   AlertTriangle,
   Play,
   RefreshCw,
@@ -60,11 +60,6 @@ const Analysis = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileUpload = async (file: File) => {
-    if (!user) {
-      toast.error("Você precisa estar logado para fazer upload");
-      return;
-    }
-
     // Validate file type
     const allowedTypes = ['video/mp4', 'video/quicktime', 'video/mov'];
     if (!allowedTypes.includes(file.type)) {
@@ -79,54 +74,63 @@ const Analysis = () => {
       return;
     }
 
+    // Create local preview URL immediately
+    const localUrl = URL.createObjectURL(file);
+    setUploadedVideoUrl(localUrl);
+
     setAnalysisState("uploading");
     setUploadProgress(0);
 
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-
-      // Upload with progress tracking
-      const { error: uploadError, data } = await supabase.storage
-        .from('exercise-videos')
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: false,
-        });
-
-      // Simulate progress since Supabase JS doesn't have native progress
+      // Simulate progress for UX
       const progressInterval = setInterval(() => {
         setUploadProgress(prev => {
           if (prev >= 90) {
-            clearInterval(progressInterval);
             return prev;
           }
           return prev + 10;
         });
       }, 200);
 
-      if (uploadError) {
-        clearInterval(progressInterval);
-        throw uploadError;
+      if (user) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+
+        // Upload with progress tracking
+        const { error: uploadError } = await supabase.storage
+          .from('exercise-videos')
+          .upload(fileName, file, {
+            cacheControl: '3600',
+            upsert: false,
+          });
+
+        if (uploadError) {
+          console.error("Supabase upload error:", uploadError);
+          // Don't throw, just continue with local file
+          toast.error("Erro ao salvar na nuvem, usando arquivo local.");
+        } else {
+          // Get signed URL for the video if upload succeeded
+          const { data: urlData } = await supabase.storage
+            .from('exercise-videos')
+            .createSignedUrl(fileName, 3600);
+
+          if (urlData?.signedUrl) {
+            setUploadedVideoUrl(urlData.signedUrl);
+          }
+        }
+      } else {
+        // If no user, just wait a bit to simulate upload time
+        await new Promise(resolve => setTimeout(resolve, 1500));
       }
 
       clearInterval(progressInterval);
       setUploadProgress(100);
 
-      // Get signed URL for the video
-      const { data: urlData } = await supabase.storage
-        .from('exercise-videos')
-        .createSignedUrl(fileName, 3600);
+      toast.success("Vídeo processado com sucesso!");
 
-      if (urlData?.signedUrl) {
-        setUploadedVideoUrl(urlData.signedUrl);
-      }
-
-      toast.success("Vídeo enviado com sucesso!");
-      
       // Start analysis
       setAnalysisState("analyzing");
-      
+
       // Simulate AI analysis (replace with real AI call when available)
       setTimeout(() => {
         setAnalysisState("complete");
@@ -134,7 +138,7 @@ const Analysis = () => {
 
     } catch (error: any) {
       console.error("Upload error:", error);
-      toast.error(error.message || "Erro ao fazer upload do vídeo");
+      toast.error(error.message || "Erro ao processar vídeo");
       setAnalysisState("idle");
       setUploadProgress(0);
     }
@@ -179,7 +183,7 @@ const Analysis = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      
+
       <main className="pt-28 pb-16 px-6">
         <div className="container mx-auto max-w-6xl">
           {/* Header */}
@@ -202,15 +206,14 @@ const Analysis = () => {
                 onChange={handleFileSelect}
                 className="hidden"
               />
-              
+
               {/* Upload Area */}
               <div className="glass-card p-8">
-                <div 
-                  className={`border-2 border-dashed rounded-xl p-12 text-center transition-colors cursor-pointer group ${
-                    isDragging 
-                      ? "border-primary bg-primary/5" 
+                <div
+                  className={`border-2 border-dashed rounded-xl p-12 text-center transition-colors cursor-pointer group ${isDragging
+                      ? "border-primary bg-primary/5"
                       : "border-border hover:border-primary/50"
-                  }`}
+                    }`}
                   onClick={openFileDialog}
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
@@ -262,13 +265,13 @@ const Analysis = () => {
                   <RefreshCw className="w-12 h-12 text-primary animate-spin" />
                 )}
               </div>
-              
+
               <h3 className="font-display text-2xl font-semibold mb-4">
                 {analysisState === "uploading" ? "Enviando Vídeo..." : "Analisando Movimento..."}
               </h3>
-              
+
               <p className="text-muted-foreground mb-8">
-                {analysisState === "uploading" 
+                {analysisState === "uploading"
                   ? "Aguarde enquanto enviamos seu vídeo para análise."
                   : "Nossa IA está identificando pontos articulares e avaliando sua execução."}
               </p>
@@ -289,15 +292,15 @@ const Analysis = () => {
                 <div className="lg:col-span-2 glass-card p-6">
                   <div className="relative rounded-xl overflow-hidden mb-4">
                     {uploadedVideoUrl ? (
-                      <video 
-                        src={uploadedVideoUrl} 
+                      <video
+                        src={uploadedVideoUrl}
                         controls
                         className="w-full h-80 object-cover bg-black"
                       />
                     ) : (
                       <>
-                        <img 
-                          src={heroImage} 
+                        <img
+                          src={heroImage}
                           alt="Exercise Analysis"
                           className="w-full h-80 object-cover"
                         />
@@ -322,9 +325,9 @@ const Analysis = () => {
                 {/* Score Card */}
                 <div className="glass-card p-6 text-center relative overflow-hidden">
                   <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-warning to-success" />
-                  
+
                   <h3 className="font-display text-lg font-semibold mb-6">Pontuação Geral</h3>
-                  
+
                   <div className="relative w-40 h-40 mx-auto mb-6">
                     <svg className="w-full h-full -rotate-90">
                       <circle
@@ -380,13 +383,12 @@ const Analysis = () => {
                   <h3 className="font-display text-xl font-semibold mb-6">Análise Detalhada</h3>
                   <div className="space-y-3">
                     {mockAnalysisResult.feedback.map((item, index) => (
-                      <div 
+                      <div
                         key={index}
-                        className={`flex items-start gap-3 p-4 rounded-lg ${
-                          item.type === "success" ? "bg-success/10" :
-                          item.type === "warning" ? "bg-warning/10" :
-                          "bg-destructive/10"
-                        }`}
+                        className={`flex items-start gap-3 p-4 rounded-lg ${item.type === "success" ? "bg-success/10" :
+                            item.type === "warning" ? "bg-warning/10" :
+                              "bg-destructive/10"
+                          }`}
                       >
                         {item.type === "success" ? (
                           <CheckCircle className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
@@ -395,11 +397,10 @@ const Analysis = () => {
                         ) : (
                           <XCircle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
                         )}
-                        <span className={`font-medium ${
-                          item.type === "success" ? "text-success" :
-                          item.type === "warning" ? "text-warning" :
-                          "text-destructive"
-                        }`}>{item.message}</span>
+                        <span className={`font-medium ${item.type === "success" ? "text-success" :
+                            item.type === "warning" ? "text-warning" :
+                              "text-destructive"
+                          }`}>{item.message}</span>
                       </div>
                     ))}
                   </div>
@@ -453,7 +454,7 @@ const Analysis = () => {
               </h3>
               <div className="flex flex-wrap justify-center gap-3">
                 {exerciseTypes.map((exercise) => (
-                  <span 
+                  <span
                     key={exercise}
                     className="px-4 py-2 rounded-full bg-secondary text-sm font-medium hover:bg-primary hover:text-primary-foreground transition-colors cursor-pointer"
                   >
@@ -468,7 +469,7 @@ const Analysis = () => {
           )}
         </div>
       </main>
-      
+
       <Footer />
     </div>
   );

@@ -1,66 +1,70 @@
-import { Activity, Dumbbell, TrendingUp, Video, Zap, Shield } from "lucide-react";
+import { Brain, Target, Zap, Shield, Smartphone, BarChart3 } from "lucide-react";
 
 const features = [
   {
-    icon: Video,
-    title: "Análise de Vídeo em Tempo Real",
-    description: "Faça upload dos seus vídeos de treino e receba feedback instantâneo sobre sua execução.",
+    icon: Brain,
+    title: "IA Neural Avançada",
+    description: "Algoritmos de visão computacional que analisam cada micro-movimento do seu corpo em tempo real.",
   },
   {
-    icon: Activity,
-    title: "Rastreamento de Movimento",
-    description: "IA avançada que identifica pontos articulares e analisa ângulos de movimento com precisão.",
+    icon: Target,
+    title: "Correção de Postura",
+    description: "Feedback instantâneo sobre sua forma para prevenir lesões e maximizar a hipertrofia.",
   },
   {
     icon: Zap,
-    title: "Feedback Instantâneo",
-    description: "Receba correções em tempo real para aprimorar sua técnica e evitar lesões.",
-  },
-  {
-    icon: TrendingUp,
-    title: "Predição de Resultados",
-    description: "Algoritmos inteligentes que estimam sua evolução e ajustam recomendações automaticamente.",
-  },
-  {
-    icon: Dumbbell,
-    title: "Treinos Personalizados",
-    description: "Sugestões de volume, intensidade e frequência baseadas em seus objetivos.",
+    title: "Planos Adaptativos",
+    description: "Treinos que evoluem automaticamente baseados na sua performance e recuperação diária.",
   },
   {
     icon: Shield,
     title: "Prevenção de Lesões",
-    description: "Classificação de risco e alertas para movimentos que podem causar danos.",
+    description: "Monitoramento constante de carga e técnica para manter você treinando com segurança.",
+  },
+  {
+    icon: Smartphone,
+    title: "App Companion",
+    description: "Leve seu personal AI para qualquer lugar. Sincronização total com wearables.",
+  },
+  {
+    icon: BarChart3,
+    title: "Analytics Profundo",
+    description: "Métricas detalhadas de evolução, força, volume e consistência.",
   },
 ];
 
 export function FeaturesSection() {
   return (
-    <section className="py-24 px-6 relative">
-      <div className="absolute inset-0 bg-gradient-to-b from-background via-card/30 to-background pointer-events-none" />
-      
-      <div className="container mx-auto relative">
-        <div className="text-center mb-16">
-          <h2 className="font-display text-4xl md:text-5xl font-bold mb-4">
-            Tecnologia de Ponta para seu{" "}
-            <span className="gradient-text">Treino</span>
+    <section className="py-24 relative overflow-hidden bg-background">
+      {/* Decorative elements */}
+      <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+      <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+
+      <div className="container mx-auto px-6">
+        <div className="text-center max-w-3xl mx-auto mb-16">
+          <h2 className="font-display text-4xl md:text-5xl font-bold mb-6">
+            Tecnologia de <span className="text-primary">Ponta</span>
           </h2>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            Combinamos visão computacional e inteligência artificial para revolucionar a forma como você treina.
+          <p className="text-xl text-muted-foreground">
+            Uma suíte completa de ferramentas de alta performance para transformar seu potencial em resultados.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {features.map((feature, index) => (
             <div
-              key={feature.title}
-              className="glass-card p-6 group hover:border-primary/50 transition-all duration-300"
-              style={{ animationDelay: `${index * 100}ms` }}
+              key={index}
+              className="group p-8 rounded-2xl bg-card/50 border border-white/5 hover:border-primary/50 transition-all duration-300 hover:shadow-[0_0_30px_rgba(16,185,129,0.1)] backdrop-blur-sm"
             >
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                <feature.icon className="w-6 h-6 text-primary" />
+              <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                <feature.icon className="w-7 h-7 text-primary" />
               </div>
-              <h3 className="font-display text-xl font-semibold mb-2">{feature.title}</h3>
-              <p className="text-muted-foreground">{feature.description}</p>
+              <h3 className="font-display text-xl font-bold mb-3 group-hover:text-primary transition-colors">
+                {feature.title}
+              </h3>
+              <p className="text-muted-foreground leading-relaxed">
+                {feature.description}
+              </p>
             </div>
           ))}
         </div>
