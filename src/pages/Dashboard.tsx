@@ -2,17 +2,18 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { 
-  TrendingUp, 
-  TrendingDown, 
-  Target, 
-  Flame, 
+import {
+  TrendingUp,
+  TrendingDown,
+  Target,
+  Flame,
   Activity,
   Calendar,
   ChevronRight,
   Dumbbell
 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, BarChart, Bar } from "recharts";
+import { AICoachInsights } from "@/components/AICoachInsights";
 
 // Mock data
 const weightData = [
@@ -52,7 +53,7 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      
+
       <main className="pt-28 pb-16 px-6">
         <div className="container mx-auto">
           {/* Welcome Section */}
@@ -135,27 +136,27 @@ const Dashboard = () => {
                   <AreaChart data={weightData}>
                     <defs>
                       <linearGradient id="colorWeight" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(160, 84%, 39%)" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="hsl(160, 84%, 39%)" stopOpacity={0}/>
+                        <stop offset="5%" stopColor="hsl(160, 84%, 39%)" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="hsl(160, 84%, 39%)" stopOpacity={0} />
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(222, 47%, 16%)" />
                     <XAxis dataKey="date" stroke="hsl(215, 20%, 55%)" />
                     <YAxis stroke="hsl(215, 20%, 55%)" domain={[75, 90]} />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: "hsl(222, 47%, 8%)", 
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "hsl(222, 47%, 8%)",
                         border: "1px solid hsl(222, 47%, 16%)",
                         borderRadius: "8px"
-                      }} 
+                      }}
                     />
-                    <Area 
-                      type="monotone" 
-                      dataKey="peso" 
-                      stroke="hsl(160, 84%, 39%)" 
+                    <Area
+                      type="monotone"
+                      dataKey="peso"
+                      stroke="hsl(160, 84%, 39%)"
                       strokeWidth={3}
-                      fillOpacity={1} 
-                      fill="url(#colorWeight)" 
+                      fillOpacity={1}
+                      fill="url(#colorWeight)"
                     />
                   </AreaChart>
                 </ResponsiveContainer>
@@ -176,16 +177,16 @@ const Dashboard = () => {
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(222, 47%, 16%)" />
                     <XAxis type="number" stroke="hsl(215, 20%, 55%)" domain={[0, 100]} />
                     <YAxis dataKey="exercise" type="category" stroke="hsl(215, 20%, 55%)" width={100} />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: "hsl(222, 47%, 8%)", 
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "hsl(222, 47%, 8%)",
                         border: "1px solid hsl(222, 47%, 16%)",
                         borderRadius: "8px"
-                      }} 
+                      }}
                     />
-                    <Bar 
-                      dataKey="accuracy" 
-                      fill="hsl(160, 84%, 39%)" 
+                    <Bar
+                      dataKey="accuracy"
+                      fill="hsl(160, 84%, 39%)"
                       radius={[0, 4, 4, 0]}
                     />
                   </BarChart>
@@ -210,12 +211,12 @@ const Dashboard = () => {
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(222, 47%, 16%)" />
                     <XAxis dataKey="month" stroke="hsl(215, 20%, 55%)" />
                     <YAxis stroke="hsl(215, 20%, 55%)" />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: "hsl(222, 47%, 8%)", 
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "hsl(222, 47%, 8%)",
                         border: "1px solid hsl(222, 47%, 16%)",
                         borderRadius: "8px"
-                      }} 
+                      }}
                     />
                     <Line type="monotone" dataKey="peito" stroke="hsl(160, 84%, 39%)" strokeWidth={2} dot={{ fill: "hsl(160, 84%, 39%)" }} />
                     <Line type="monotone" dataKey="braco" stroke="hsl(25, 95%, 53%)" strokeWidth={2} dot={{ fill: "hsl(25, 95%, 53%)" }} />
@@ -247,27 +248,24 @@ const Dashboard = () => {
               <div className="space-y-4">
                 {recentExercises.map((exercise, index) => (
                   <div key={index} className="flex items-center gap-4 p-3 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors cursor-pointer">
-                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                      exercise.status === "correct" ? "bg-success/10" :
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${exercise.status === "correct" ? "bg-success/10" :
                       exercise.status === "warning" ? "bg-warning/10" :
-                      "bg-destructive/10"
-                    }`}>
-                      <Dumbbell className={`w-5 h-5 ${
-                        exercise.status === "correct" ? "text-success" :
+                        "bg-destructive/10"
+                      }`}>
+                      <Dumbbell className={`w-5 h-5 ${exercise.status === "correct" ? "text-success" :
                         exercise.status === "warning" ? "text-warning" :
-                        "text-destructive"
-                      }`} />
+                          "text-destructive"
+                        }`} />
                     </div>
                     <div className="flex-1 min-w-0">
                       <h4 className="font-medium truncate">{exercise.name}</h4>
                       <p className="text-sm text-muted-foreground">{exercise.date}</p>
                     </div>
                     <div className="text-right">
-                      <span className={`font-bold ${
-                        exercise.status === "correct" ? "text-success" :
+                      <span className={`font-bold ${exercise.status === "correct" ? "text-success" :
                         exercise.status === "warning" ? "text-warning" :
-                        "text-destructive"
-                      }`}>{exercise.score}%</span>
+                          "text-destructive"
+                        }`}>{exercise.score}%</span>
                     </div>
                   </div>
                 ))}
@@ -278,17 +276,20 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Prediction Card */}
-          <div className="mt-8 glass-card p-6 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-[80px] pointer-events-none" />
-            
-            <div className="relative z-10 grid md:grid-cols-2 gap-8 items-center">
-              <div>
+          {/* AI Coach & Prediction Row */}
+          <div className="grid lg:grid-cols-2 gap-6 mt-8">
+            <AICoachInsights />
+
+            {/* Static Prediction Card (kept as secondary info) */}
+            <div className="glass-card p-6 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-[80px] pointer-events-none" />
+
+              <div className="relative z-10">
                 <h3 className="font-display text-2xl font-bold mb-4">
-                  Predição de <span className="gradient-text">Resultados</span>
+                  Meta de <span className="gradient-text">Longo Prazo</span>
                 </h3>
                 <p className="text-muted-foreground mb-6">
-                  Com base no seu histórico de treinos, peso e medidas, nossa IA estima que você 
+                  Com base no seu histórico de treinos, peso e medidas, nossa IA estima que você
                   atingirá seu objetivo de <strong className="text-foreground">75kg</strong> em aproximadamente:
                 </p>
                 <div className="flex items-baseline gap-2 mb-6">
@@ -297,31 +298,23 @@ const Dashboard = () => {
                 </div>
                 <Progress value={62} className="h-3 mb-2" />
                 <p className="text-sm text-muted-foreground">62% do caminho concluído</p>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div className="glass-card p-4 text-center">
-                  <h4 className="text-sm text-muted-foreground mb-2">Objetivo</h4>
-                  <p className="text-2xl font-bold">Emagrecimento</p>
-                </div>
-                <div className="glass-card p-4 text-center">
-                  <h4 className="text-sm text-muted-foreground mb-2">Meta Peso</h4>
-                  <p className="text-2xl font-bold">75kg</p>
-                </div>
-                <div className="glass-card p-4 text-center">
-                  <h4 className="text-sm text-muted-foreground mb-2">Taxa Atual</h4>
-                  <p className="text-2xl font-bold text-success">-0.6kg/sem</p>
-                </div>
-                <div className="glass-card p-4 text-center">
-                  <h4 className="text-sm text-muted-foreground mb-2">Tendência</h4>
-                  <p className="text-2xl font-bold text-success">Positiva ↑</p>
+
+                <div className="grid grid-cols-2 gap-4 mt-6">
+                  <div className="glass-card p-3 text-center bg-background/50">
+                    <h4 className="text-xs text-muted-foreground mb-1">Taxa Atual</h4>
+                    <p className="text-lg font-bold text-success">-0.6kg/sem</p>
+                  </div>
+                  <div className="glass-card p-3 text-center bg-background/50">
+                    <h4 className="text-xs text-muted-foreground mb-1">Tendência</h4>
+                    <p className="text-lg font-bold text-success">Positiva ↑</p>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
       </main>
-      
+
       <Footer />
     </div>
   );
