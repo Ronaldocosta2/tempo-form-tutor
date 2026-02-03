@@ -2,3 +2,6 @@ project_id = "sdwbkkzfmyrthxzdgwlj"
 
 [functions.analyze-exercise]
 verify_jwt = false
+
+[functions.weekly-plan]
+verify_jwt = false

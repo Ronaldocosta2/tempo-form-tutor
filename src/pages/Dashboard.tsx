@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, BarChart, Bar } from "recharts";
 import { AICoachInsights } from "@/components/AICoachInsights";
+import { WeeklyPlanCard } from "@/components/WeeklyPlanCard";
+import { Link } from "react-router-dom";
 
 // Mock data
 const weightData = [
@@ -270,10 +272,20 @@ const Dashboard = () => {
                   </div>
                 ))}
               </div>
-              <Button variant="outline" className="w-full mt-4">
-                Ver Todas as Análises
-              </Button>
+              <Link to="/history">
+                <Button variant="outline" className="w-full mt-4">
+                  Ver Todas as Análises
+                </Button>
+              </Link>
             </div>
+          </div>
+
+          {/* Weekly Plan - Gamified Recommendations */}
+          <div className="mt-8">
+            <h2 className="font-display text-2xl font-bold mb-6">
+              Seu Plano <span className="gradient-text">Semanal</span>
+            </h2>
+            <WeeklyPlanCard />
           </div>
 
           {/* AI Coach & Prediction Row */}
