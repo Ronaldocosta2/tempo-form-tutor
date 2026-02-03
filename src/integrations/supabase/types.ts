@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      exercise_analyses: {
+        Row: {
+          ai_analysis: string | null
+          created_at: string
+          exercise_type: string
+          feedback: Json | null
+          id: string
+          joint_angles: Json | null
+          overall_score: number
+          recommendations: Json | null
+          risk_level: string | null
+          status: string
+          updated_at: string
+          user_id: string
+          video_path: string | null
+          video_url: string
+        }
+        Insert: {
+          ai_analysis?: string | null
+          created_at?: string
+          exercise_type: string
+          feedback?: Json | null
+          id?: string
+          joint_angles?: Json | null
+          overall_score?: number
+          recommendations?: Json | null
+          risk_level?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+          video_path?: string | null
+          video_url: string
+        }
+        Update: {
+          ai_analysis?: string | null
+          created_at?: string
+          exercise_type?: string
+          feedback?: Json | null
+          id?: string
+          joint_angles?: Json | null
+          overall_score?: number
+          recommendations?: Json | null
+          risk_level?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          video_path?: string | null
+          video_url?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           arm_cm: number | null

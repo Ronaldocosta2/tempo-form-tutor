@@ -11,12 +11,14 @@ import {
   Play,
   RefreshCw,
   Download,
-  ChevronRight
+  ChevronRight,
+  History
 } from "lucide-react";
 import { useState, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { Link } from "react-router-dom";
 import heroImage from "@/assets/hero-fitness.jpg";
 
 const exerciseTypes = [
@@ -27,29 +29,19 @@ const exerciseTypes = [
   "Remada Curvada",
 ];
 
-const mockAnalysisResult = {
-  exercise: "Agachamento Livre",
-  overallScore: 78,
-  status: "warning" as const,
-  feedback: [
-    { type: "success" as const, message: "Profundidade do agachamento adequada" },
-    { type: "success" as const, message: "Posição dos pés correta" },
-    { type: "warning" as const, message: "Joelhos projetando levemente para dentro" },
-    { type: "error" as const, message: "Coluna lombar perdendo neutralidade na fase final" },
-  ],
-  recommendations: [
-    "Foque em empurrar os joelhos para fora durante a subida",
-    "Reduza a carga em 10% até corrigir a postura",
-    "Pratique o movimento sem peso, focando na lombar",
-    "Considere usar um cinto para cargas mais pesadas",
-  ],
-  riskLevel: "medium" as const,
+interface AnalysisResult {
+  exercise: string;
+  overallScore: number;
+  status: "success" | "warning" | "error";
+  feedback: Array<{ type: "success" | "warning" | "error"; message: string }>;
+  recommendations: string[];
+  riskLevel: "low" | "medium" | "high";
   jointAngles: {
-    joelho: 92,
-    quadril: 88,
-    tornozelo: 75,
-  },
-};
+    joelho: number;
+    quadril: number;
+    tornozelo: number;
+  };
+}
 
 const Analysis = () => {
   const { user } = useAuth();
@@ -57,6 +49,8 @@ const Analysis = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadedVideoUrl, setUploadedVideoUrl] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [selectedExercise, setSelectedExercise] = useState<string>("Agachamento Livre");
+  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileUpload = async (file: File) => {
@@ -92,9 +86,13 @@ const Analysis = () => {
         });
       }, 200);
 
+      let videoUrl = localUrl;
+      let videoPath: string | null = null;
+
       if (user) {
         const fileExt = file.name.split('.').pop();
         const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+        videoPath = fileName;
 
         // Upload with progress tracking
         const { error: uploadError } = await supabase.storage
@@ -106,7 +104,6 @@ const Analysis = () => {
 
         if (uploadError) {
           console.error("Supabase upload error:", uploadError);
-          // Don't throw, just continue with local file
           toast.error("Erro ao salvar na nuvem, usando arquivo local.");
         } else {
           // Get signed URL for the video if upload succeeded
@@ -115,26 +112,114 @@ const Analysis = () => {
             .createSignedUrl(fileName, 3600);
 
           if (urlData?.signedUrl) {
-            setUploadedVideoUrl(urlData.signedUrl);
+            videoUrl = urlData.signedUrl;
+            setUploadedVideoUrl(videoUrl);
           }
         }
-      } else {
-        // If no user, just wait a bit to simulate upload time
-        await new Promise(resolve => setTimeout(resolve, 1500));
       }
 
       clearInterval(progressInterval);
       setUploadProgress(100);
 
-      toast.success("Vídeo processado com sucesso!");
+      toast.success("Vídeo enviado! Iniciando análise com IA...");
 
       // Start analysis
       setAnalysisState("analyzing");
 
-      // Simulate AI analysis (replace with real AI call when available)
-      setTimeout(() => {
-        setAnalysisState("complete");
-      }, 2500);
+      if (user) {
+        // Create analysis record in database
+        const { data: analysisRecord, error: insertError } = await supabase
+          .from("exercise_analyses")
+          .insert({
+            user_id: user.id,
+            video_url: videoUrl,
+            video_path: videoPath,
+            exercise_type: selectedExercise,
+            status: "pending",
+          })
+          .select()
+          .single();
+
+        if (insertError) {
+          console.error("Insert error:", insertError);
+          throw new Error("Erro ao criar registro de análise");
+        }
+
+        // Call the AI analysis edge function
+        const { data: aiResult, error: aiError } = await supabase.functions.invoke("analyze-exercise", {
+          body: {
+            analysisId: analysisRecord.id,
+            videoUrl: videoUrl,
+            exerciseType: selectedExercise,
+          },
+        });
+
+        if (aiError) {
+          console.error("AI analysis error:", aiError);
+          
+          // Handle rate limit errors
+          if (aiError.message?.includes("429") || aiError.message?.includes("rate")) {
+            toast.error("Limite de requisições atingido. Tente novamente em alguns minutos.");
+          } else if (aiError.message?.includes("402")) {
+            toast.error("Créditos insuficientes. Por favor, adicione créditos à sua conta.");
+          } else {
+            toast.error("Erro na análise. Usando análise alternativa.");
+          }
+          
+          // Fallback to basic result
+          setAnalysisResult({
+            exercise: selectedExercise,
+            overallScore: 75,
+            status: "warning",
+            feedback: [
+              { type: "success", message: "Vídeo processado com sucesso" },
+              { type: "warning", message: "Análise limitada - tente novamente mais tarde" },
+            ],
+            recommendations: [
+              "Continue praticando com atenção à postura",
+              "Grave em boa iluminação para melhores análises",
+            ],
+            riskLevel: "medium",
+            jointAngles: { joelho: 90, quadril: 85, tornozelo: 70 },
+          });
+        } else if (aiResult?.analysis) {
+          // Set the real AI analysis result
+          setAnalysisResult({
+            exercise: selectedExercise,
+            overallScore: aiResult.analysis.overallScore,
+            status: aiResult.analysis.status,
+            feedback: aiResult.analysis.feedback,
+            recommendations: aiResult.analysis.recommendations,
+            riskLevel: aiResult.analysis.riskLevel,
+            jointAngles: aiResult.analysis.jointAngles,
+          });
+          toast.success("Análise concluída!");
+        }
+      } else {
+        // Demo mode without user
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        setAnalysisResult({
+          exercise: selectedExercise,
+          overallScore: 78,
+          status: "warning",
+          feedback: [
+            { type: "success", message: "Profundidade do movimento adequada" },
+            { type: "success", message: "Posição inicial correta" },
+            { type: "warning", message: "Atenção ao alinhamento dos joelhos" },
+            { type: "error", message: "Postura da coluna pode ser melhorada" },
+          ],
+          recommendations: [
+            "Faça login para salvar suas análises",
+            "Grave em ambiente bem iluminado",
+            "Use roupas que permitam ver as articulações",
+          ],
+          riskLevel: "medium",
+          jointAngles: { joelho: 88, quadril: 85, tornozelo: 72 },
+        });
+        toast.info("Modo demo - faça login para salvar suas análises");
+      }
+
+      setAnalysisState("complete");
 
     } catch (error: any) {
       console.error("Upload error:", error);
@@ -168,7 +253,7 @@ const Analysis = () => {
     if (file) {
       handleFileUpload(file);
     }
-  }, [user]);
+  }, [user, selectedExercise]);
 
   const openFileDialog = () => {
     fileInputRef.current?.click();
@@ -178,6 +263,31 @@ const Analysis = () => {
     setAnalysisState("idle");
     setUploadProgress(0);
     setUploadedVideoUrl(null);
+    setAnalysisResult(null);
+  };
+
+  const getRiskLabel = (risk: string) => {
+    switch (risk) {
+      case "low": return "Baixo";
+      case "medium": return "Médio";
+      case "high": return "Alto";
+      default: return "N/A";
+    }
+  };
+
+  const getRiskColor = (risk: string) => {
+    switch (risk) {
+      case "low": return "text-success bg-success/10";
+      case "medium": return "text-warning bg-warning/10";
+      case "high": return "text-destructive bg-destructive/10";
+      default: return "text-muted-foreground";
+    }
+  };
+
+  const getScoreColor = (score: number) => {
+    if (score >= 80) return "hsl(var(--success))";
+    if (score >= 60) return "hsl(var(--warning))";
+    return "hsl(var(--destructive))";
   };
 
   return (
@@ -187,73 +297,105 @@ const Analysis = () => {
       <main className="pt-28 pb-16 px-6">
         <div className="container mx-auto max-w-6xl">
           {/* Header */}
-          <div className="text-center mb-12">
-            <h1 className="font-display text-4xl md:text-5xl font-bold mb-4">
-              Análise de <span className="gradient-text">Movimento</span>
-            </h1>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Faça upload do vídeo do seu exercício e receba feedback detalhado sobre sua execução.
-            </p>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-12">
+            <div className="text-center md:text-left">
+              <h1 className="font-display text-4xl md:text-5xl font-bold mb-4">
+                Análise de <span className="gradient-text">Movimento</span>
+              </h1>
+              <p className="text-muted-foreground text-lg max-w-2xl">
+                Faça upload do vídeo do seu exercício e receba feedback detalhado sobre sua execução.
+              </p>
+            </div>
+            <Link to="/history">
+              <Button variant="glass" size="lg">
+                <History className="w-5 h-5" />
+                Ver Histórico
+              </Button>
+            </Link>
           </div>
 
           {analysisState === "idle" && (
-            <div className="grid md:grid-cols-2 gap-8">
-              {/* Hidden file input */}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="video/mp4,video/quicktime,video/mov"
-                onChange={handleFileSelect}
-                className="hidden"
-              />
-
-              {/* Upload Area */}
-              <div className="glass-card p-8">
-                <div
-                  className={`border-2 border-dashed rounded-xl p-12 text-center transition-colors cursor-pointer group ${isDragging
-                      ? "border-primary bg-primary/5"
-                      : "border-border hover:border-primary/50"
-                    }`}
-                  onClick={openFileDialog}
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                  onDrop={handleDrop}
-                >
-                  <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
-                    <Upload className="w-10 h-10 text-primary" />
-                  </div>
-                  <h3 className="font-display text-xl font-semibold mb-2">Upload de Vídeo</h3>
-                  <p className="text-muted-foreground mb-6">
-                    Arraste e solte seu vídeo aqui ou clique para selecionar
-                  </p>
-                  <Button variant="hero" type="button">
-                    Selecionar Arquivo
-                  </Button>
-                  <p className="text-sm text-muted-foreground mt-4">
-                    Formatos aceitos: MP4, MOV • Máximo 100MB
-                  </p>
+            <>
+              {/* Exercise Type Selection */}
+              <div className="mb-8">
+                <h3 className="font-display text-lg font-semibold mb-4">
+                  Selecione o Exercício
+                </h3>
+                <div className="flex flex-wrap gap-3">
+                  {exerciseTypes.map((exercise) => (
+                    <button
+                      key={exercise}
+                      onClick={() => setSelectedExercise(exercise)}
+                      className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                        selectedExercise === exercise
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-secondary hover:bg-primary/20"
+                      }`}
+                    >
+                      {exercise}
+                    </button>
+                  ))}
                 </div>
               </div>
 
-              {/* Record Option */}
-              <div className="glass-card p-8">
-                <div className="border-2 border-dashed border-border rounded-xl p-12 text-center hover:border-accent/50 transition-colors cursor-pointer group">
-                  <div className="w-20 h-20 rounded-2xl bg-accent/10 flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
-                    <Video className="w-10 h-10 text-accent" />
+              <div className="grid md:grid-cols-2 gap-8">
+                {/* Hidden file input */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="video/mp4,video/quicktime,video/mov"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+
+                {/* Upload Area */}
+                <div className="glass-card p-8">
+                  <div
+                    className={`border-2 border-dashed rounded-xl p-12 text-center transition-colors cursor-pointer group ${isDragging
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:border-primary/50"
+                      }`}
+                    onClick={openFileDialog}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                  >
+                    <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
+                      <Upload className="w-10 h-10 text-primary" />
+                    </div>
+                    <h3 className="font-display text-xl font-semibold mb-2">Upload de Vídeo</h3>
+                    <p className="text-muted-foreground mb-6">
+                      Arraste e solte seu vídeo aqui ou clique para selecionar
+                    </p>
+                    <Button variant="hero" type="button">
+                      Selecionar Arquivo
+                    </Button>
+                    <p className="text-sm text-muted-foreground mt-4">
+                      Formatos aceitos: MP4, MOV • Máximo 100MB
+                    </p>
                   </div>
-                  <h3 className="font-display text-xl font-semibold mb-2">Gravar Agora</h3>
-                  <p className="text-muted-foreground mb-6">
-                    Use sua câmera para gravar o exercício em tempo real
-                  </p>
-                  <Button variant="accent">
-                    Abrir Câmera
-                  </Button>
-                  <p className="text-sm text-muted-foreground mt-4">
-                    Certifique-se de ter boa iluminação e enquadramento
-                  </p>
+                </div>
+
+                {/* Record Option */}
+                <div className="glass-card p-8">
+                  <div className="border-2 border-dashed border-border rounded-xl p-12 text-center hover:border-accent/50 transition-colors cursor-pointer group">
+                    <div className="w-20 h-20 rounded-2xl bg-accent/10 flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
+                      <Video className="w-10 h-10 text-accent" />
+                    </div>
+                    <h3 className="font-display text-xl font-semibold mb-2">Gravar Agora</h3>
+                    <p className="text-muted-foreground mb-6">
+                      Use sua câmera para gravar o exercício em tempo real
+                    </p>
+                    <Button variant="accent">
+                      Abrir Câmera
+                    </Button>
+                    <p className="text-sm text-muted-foreground mt-4">
+                      Certifique-se de ter boa iluminação e enquadramento
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
+            </>
           )}
 
           {(analysisState === "uploading" || analysisState === "analyzing") && (
@@ -267,25 +409,25 @@ const Analysis = () => {
               </div>
 
               <h3 className="font-display text-2xl font-semibold mb-4">
-                {analysisState === "uploading" ? "Enviando Vídeo..." : "Analisando Movimento..."}
+                {analysisState === "uploading" ? "Enviando Vídeo..." : "Analisando com IA..."}
               </h3>
 
               <p className="text-muted-foreground mb-8">
                 {analysisState === "uploading"
                   ? "Aguarde enquanto enviamos seu vídeo para análise."
-                  : "Nossa IA está identificando pontos articulares e avaliando sua execução."}
+                  : "Nossa IA está avaliando sua execução do " + selectedExercise + "."}
               </p>
 
               <div className="max-w-md mx-auto">
                 <Progress value={analysisState === "uploading" ? uploadProgress : 100} className="h-3 mb-2" />
                 <p className="text-sm text-muted-foreground">
-                  {analysisState === "uploading" ? `${uploadProgress}% concluído` : "Processando..."}
+                  {analysisState === "uploading" ? `${uploadProgress}% concluído` : "Processando análise..."}
                 </p>
               </div>
             </div>
           )}
 
-          {analysisState === "complete" && (
+          {analysisState === "complete" && analysisResult && (
             <div className="space-y-8">
               {/* Video Preview & Score */}
               <div className="grid lg:grid-cols-3 gap-6">
@@ -312,7 +454,7 @@ const Analysis = () => {
                     )}
                     <div className="absolute bottom-4 left-4 right-4 flex justify-between items-center">
                       <span className="text-sm font-medium bg-card/80 px-3 py-1 rounded-full">
-                        {mockAnalysisResult.exercise}
+                        {analysisResult.exercise}
                       </span>
                       <Button variant="glass" size="sm">
                         <Download className="w-4 h-4" />
@@ -343,34 +485,36 @@ const Analysis = () => {
                         cy="80"
                         r="70"
                         fill="none"
-                        stroke="hsl(var(--warning))"
+                        stroke={getScoreColor(analysisResult.overallScore)}
                         strokeWidth="12"
-                        strokeDasharray={`${(mockAnalysisResult.overallScore / 100) * 440} 440`}
+                        strokeDasharray={`${(analysisResult.overallScore / 100) * 440} 440`}
                         strokeLinecap="round"
                       />
                     </svg>
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="font-display text-4xl font-bold">{mockAnalysisResult.overallScore}%</span>
+                      <span className="font-display text-4xl font-bold">{analysisResult.overallScore}%</span>
                     </div>
                   </div>
 
-                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-warning/10 text-warning">
+                  <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full ${getRiskColor(analysisResult.riskLevel)}`}>
                     <AlertTriangle className="w-4 h-4" />
-                    <span className="text-sm font-medium">Parcialmente Correto</span>
+                    <span className="text-sm font-medium">
+                      {analysisResult.overallScore >= 80 ? "Excelente" : analysisResult.overallScore >= 60 ? "Parcialmente Correto" : "Precisa Melhorar"}
+                    </span>
                   </div>
 
                   <div className="mt-6 grid grid-cols-3 gap-2 text-sm">
                     <div className="bg-secondary rounded-lg p-2">
                       <p className="text-muted-foreground">Joelho</p>
-                      <p className="font-bold">{mockAnalysisResult.jointAngles.joelho}°</p>
+                      <p className="font-bold">{analysisResult.jointAngles.joelho}°</p>
                     </div>
                     <div className="bg-secondary rounded-lg p-2">
                       <p className="text-muted-foreground">Quadril</p>
-                      <p className="font-bold">{mockAnalysisResult.jointAngles.quadril}°</p>
+                      <p className="font-bold">{analysisResult.jointAngles.quadril}°</p>
                     </div>
                     <div className="bg-secondary rounded-lg p-2">
                       <p className="text-muted-foreground">Tornozelo</p>
-                      <p className="font-bold">{mockAnalysisResult.jointAngles.tornozelo}°</p>
+                      <p className="font-bold">{analysisResult.jointAngles.tornozelo}°</p>
                     </div>
                   </div>
                 </div>
@@ -382,7 +526,7 @@ const Analysis = () => {
                 <div className="glass-card p-6">
                   <h3 className="font-display text-xl font-semibold mb-6">Análise Detalhada</h3>
                   <div className="space-y-3">
-                    {mockAnalysisResult.feedback.map((item, index) => (
+                    {analysisResult.feedback.map((item, index) => (
                       <div
                         key={index}
                         className={`flex items-start gap-3 p-4 rounded-lg ${item.type === "success" ? "bg-success/10" :
@@ -410,7 +554,7 @@ const Analysis = () => {
                 <div className="glass-card p-6">
                   <h3 className="font-display text-xl font-semibold mb-6">Recomendações</h3>
                   <div className="space-y-4">
-                    {mockAnalysisResult.recommendations.map((rec, index) => (
+                    {analysisResult.recommendations.map((rec, index) => (
                       <div key={index} className="flex items-start gap-3">
                         <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                           <span className="text-sm font-bold text-primary">{index + 1}</span>
@@ -420,13 +564,17 @@ const Analysis = () => {
                     ))}
                   </div>
 
-                  <div className="mt-8 p-4 rounded-xl bg-warning/10 border border-warning/20">
+                  <div className={`mt-8 p-4 rounded-xl border ${getRiskColor(analysisResult.riskLevel)} border-current/20`}>
                     <div className="flex items-center gap-2 mb-2">
-                      <AlertTriangle className="w-5 h-5 text-warning" />
-                      <span className="font-semibold text-warning">Nível de Risco: Médio</span>
+                      <AlertTriangle className="w-5 h-5" />
+                      <span className="font-semibold">Nível de Risco: {getRiskLabel(analysisResult.riskLevel)}</span>
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      Corrija os pontos indicados para evitar possíveis lesões na lombar e joelhos.
+                    <p className="text-sm opacity-80">
+                      {analysisResult.riskLevel === "low" 
+                        ? "Continue assim! Sua execução está segura."
+                        : analysisResult.riskLevel === "medium"
+                        ? "Corrija os pontos indicados para evitar possíveis lesões."
+                        : "Atenção! Corrija os erros antes de aumentar a carga."}
                     </p>
                   </div>
                 </div>
@@ -438,10 +586,12 @@ const Analysis = () => {
                   <RefreshCw className="w-5 h-5" />
                   Nova Análise
                 </Button>
-                <Button variant="glass" size="lg">
-                  Ver no Dashboard
-                  <ChevronRight className="w-5 h-5" />
-                </Button>
+                <Link to="/history">
+                  <Button variant="glass" size="lg">
+                    Ver Histórico
+                    <ChevronRight className="w-5 h-5" />
+                  </Button>
+                </Link>
               </div>
             </div>
           )}
@@ -456,7 +606,12 @@ const Analysis = () => {
                 {exerciseTypes.map((exercise) => (
                   <span
                     key={exercise}
-                    className="px-4 py-2 rounded-full bg-secondary text-sm font-medium hover:bg-primary hover:text-primary-foreground transition-colors cursor-pointer"
+                    onClick={() => setSelectedExercise(exercise)}
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-colors cursor-pointer ${
+                      selectedExercise === exercise
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-secondary hover:bg-primary hover:text-primary-foreground"
+                    }`}
                   >
                     {exercise}
                   </span>
