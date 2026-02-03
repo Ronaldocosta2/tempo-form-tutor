@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      daily_checkins: {
+        Row: {
+          checkin_date: string
+          created_at: string
+          energy_level: number
+          goals_for_today: string | null
+          id: string
+          mood: string
+          muscle_soreness: number | null
+          notes: string | null
+          shared_to_social: boolean | null
+          sleep_quality: number | null
+          streak_count: number | null
+          user_id: string
+          weight_kg: number | null
+          xp_earned: number | null
+        }
+        Insert: {
+          checkin_date?: string
+          created_at?: string
+          energy_level: number
+          goals_for_today?: string | null
+          id?: string
+          mood: string
+          muscle_soreness?: number | null
+          notes?: string | null
+          shared_to_social?: boolean | null
+          sleep_quality?: number | null
+          streak_count?: number | null
+          user_id: string
+          weight_kg?: number | null
+          xp_earned?: number | null
+        }
+        Update: {
+          checkin_date?: string
+          created_at?: string
+          energy_level?: number
+          goals_for_today?: string | null
+          id?: string
+          mood?: string
+          muscle_soreness?: number | null
+          notes?: string | null
+          shared_to_social?: boolean | null
+          sleep_quality?: number | null
+          streak_count?: number | null
+          user_id?: string
+          weight_kg?: number | null
+          xp_earned?: number | null
+        }
+        Relationships: []
+      }
       exercise_analyses: {
         Row: {
           ai_analysis: string | null
