@@ -15,7 +15,9 @@ import {
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, BarChart, Bar } from "recharts";
 import { AICoachInsights } from "@/components/AICoachInsights";
 import { WeeklyPlanCard } from "@/components/WeeklyPlanCard";
+import { DailyCheckinBanner } from "@/components/DailyCheckinBanner";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Mock data
 const weightData = [
@@ -52,12 +54,17 @@ const recentExercises = [
 ];
 
 const Dashboard = () => {
+  const { user } = useAuth();
+  
   return (
     <div className="min-h-screen bg-background">
       <Header />
 
       <main className="pt-28 pb-16 px-6">
         <div className="container mx-auto">
+          {/* Daily Check-in Banner */}
+          <DailyCheckinBanner />
+
           {/* Welcome Section */}
           <div className="mb-8">
             <h1 className="font-display text-3xl md:text-4xl font-bold mb-2">
